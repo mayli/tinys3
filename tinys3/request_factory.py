@@ -72,7 +72,6 @@ class ListRequest(S3Request):
         marker = ''
         more = True
         url = self.bucket_url('', self.bucket)
-        k = '{{http://s3.amazonaws.com/doc/2006-03-01/}}{0}'.format
 
         try:
             import lxml.etree as ET
@@ -87,20 +86,21 @@ class ListRequest(S3Request):
             resp.raise_for_status()
 
             root = ET.fromstring(resp.content)
-            for tag in root.findall(k('Contents')):
+            for tag in root.findall('Contents'):
                 p = {
-                    'key': tag.find(k('Key')).text,
-                    'size': int(tag.find(k('Size')).text),
+                    'key': tag.find('Key').text,
+                    'size': int(tag.find('Size').text),
                     'last_modified': datetime.datetime.strptime(
-                        tag.find(k('LastModified')).text,
+                        tag.find('LastModified').text,
                         '%Y-%m-%dT%H:%M:%S.%fZ',
                     ),
-                    'etag': tag.find(k('ETag')).text[1:-1],
-                    'storage_class': tag.find(k('StorageClass')).text,
+                    'etag': tag.find('ETag').text[1:-1],
+                    'storage_class': tag.find('StorageClass').text,
                 }
                 yield p
 
-            more = root.find(k('IsTruncated')).text == 'true'
+            is_truncated = root.find('IsTruncated')
+            more = is_truncated and is_truncated.text == 'true'
             if more:
                 marker = p['key']
 
